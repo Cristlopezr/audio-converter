@@ -1,0 +1,12 @@
+services:
+  audio-converter:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: audio-converter
+    working_dir: /app
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./:/app
+    command: sh -c "npm install && npm run dev"
