@@ -1,16 +1,5 @@
-import { NextFunction, Request, Response } from 'express';
 import multer from 'multer';
-
-export const audioMimeTypes = [
-    'audio/mpeg', // .mp3
-    'audio/wav', // .wav
-    'audio/x-wav', // también .wav
-    'audio/ogg', // .ogg
-    'audio/mp4', // .m4a
-    'audio/x-aac', // .aac
-    'audio/flac', // .flac
-    'audio/webm', // .webm
-];
+import { audioMimeTypes } from '../domain/constants/audio-mime-types';
 
 export const storage = multer.diskStorage({
     destination: function (req, file, cb) {
@@ -31,11 +20,3 @@ export const upload = multer({
         }
     },
 });
-
-export const handleMulterMiddlewareError = (err: any, req: Request, res: Response, next: NextFunction) => {
-    if (err) {
-        res.status(400).json({ error: err.message });
-        return;
-    }
-    next();
-};

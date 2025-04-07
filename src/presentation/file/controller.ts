@@ -1,19 +1,13 @@
 import { Request, Response } from 'express';
 import { fileTypeFromFile } from 'file-type';
 import fs from 'fs/promises';
-import { audioMimeTypes } from '../../config/multer';
 import path from 'path';
-import Stream from 'stream';
-import ffmpeg from 'fluent-ffmpeg';
+import { ConvertAudioUseCase } from '../../domain/use-cases/convert-audio.use-case';
+import { audioMimeTypes } from '../../domain/constants/audio-mime-types';
+import { FfmpegAdapter } from '../../infrastructure/adapters/ffmpeg.adapter';
 
-type converToProps = {
-    input?: string | Stream.Readable;
-    options?: ffmpeg.FfmpegCommandOptions;
-    convertTo: string;
-    output: string;
-    onEnd: (stdout: string | null, stderr: string | null) => void;
-    onError: (error: Error, stdout: string | null, stderr: string | null) => void;
-};
+const audioProcessor = new FfmpegAdapter();
+const convertAudioUseCase = new ConvertAudioUseCase(audioProcessor);
 
 export class FileController {
     public uploadFile = async (req: Request, res: Response) => {
@@ -72,7 +66,7 @@ export class FileController {
         const saveFolderPath = path.join(__dirname, '..', '..', '..', 'convertions', id);
         await fs.mkdir(saveFolderPath, { recursive: true });
 
-        this.convertTo({
+        convertAudioUseCase.execute({
             convertTo: newFormat,
             onEnd: async () => {
                 await this.deleteFile(filePath);
@@ -100,9 +94,5 @@ export class FileController {
             console.log(error);
             return false;
         }
-    };
-
-    private convertTo = ({ input, convertTo, output, onEnd, onError, options }: converToProps): ffmpeg.FfmpegCommand => {
-        return ffmpeg(input, options).toFormat(convertTo).on('end', onEnd).on('error', onError).save(output);
     };
 }
