@@ -15,6 +15,7 @@ export class FileRoutes {
 
         router.post('/upload', uploadAudioUseCase.execute('file'), handleMiddlewareError, fileController.uploadFile);
         router.post('/convert', fileController.convertFileToNewFormat);
+        router.post('/cutAudio', fileController.cutAudio);
 
         return router;
     }

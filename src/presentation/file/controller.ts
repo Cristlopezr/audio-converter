@@ -5,9 +5,11 @@ import path from 'path';
 import { ConvertAudioUseCase } from '../../domain/use-cases/convert-audio.use-case';
 import { audioMimeTypes } from '../../domain/constants/audio-mime-types';
 import { FfmpegAdapter } from '../../infrastructure/adapters/ffmpeg.adapter';
+import { CutAudioUseCase } from '../../domain/use-cases/cut-audio.use-case';
 
 const audioProcessor = new FfmpegAdapter();
 const convertAudioUseCase = new ConvertAudioUseCase(audioProcessor);
+const cutAudioUseCase = new CutAudioUseCase(audioProcessor);
 
 export class FileController {
     public uploadFile = async (req: Request, res: Response) => {
@@ -23,7 +25,7 @@ export class FileController {
             return;
         }
 
-        if (!audioMimeTypes.includes(fileType.mime)) {
+        if (!audioMimeTypes.includes(fileType.mime.split(';')[0])) {
             await this.deleteFile(req.file.path);
             res.status(400).json(`File type not supported.`);
             return;
@@ -40,17 +42,15 @@ export class FileController {
 
     public convertFileToNewFormat = async (req: Request, res: Response) => {
         const { newFormat, originalName, id, size, ext, mime } = req.body;
-        //!Validar todo, que vengan las propiedades necesarias
-
+        
         const filePath = path.join(__dirname, '..', '..', '..', 'uploads', `${id}-${originalName}`);
 
-        try {
-            await fs.access(filePath, fs.constants.F_OK);
-        } catch (err) {
+        const fileExists = await this.checkIfFileExists(filePath);
+
+        if (!fileExists) {
             res.status(400).json({
                 error: `File doesn't exists`,
             });
-            return;
         }
 
         if (!newFormat) {
@@ -84,6 +84,54 @@ export class FileController {
             output: `${saveFolderPath}/${originalNameWithOutExt}${newFormat}`,
             input: filePath,
         });
+    };
+
+    public cutAudio = async (req: Request, res: Response) => {
+        const { startTime, duration, originalName, id, size, ext } = req.body;
+
+        const filePath = path.join(__dirname, '..', '..', '..', 'uploads', `${id}-${originalName}`);
+
+        const fileExists = await this.checkIfFileExists(filePath);
+
+        if (!fileExists) {
+            res.status(400).json({
+                error: `File doesn't exists`,
+            });
+            return;
+        }
+
+        const saveFolderPath = path.join(__dirname, '..', '..', '..', 'convertions', id);
+        await fs.mkdir(saveFolderPath, { recursive: true });
+
+        cutAudioUseCase.execute({
+            startTime,
+            duration,
+            onEnd: async () => {
+                await this.deleteFile(filePath);
+                res.status(200).json({
+                    message: 'Audio has been successfully cut.',
+                });
+            },
+            onError: async (error: any) => {
+                console.log({ error });
+                await this.deleteFile(filePath);
+                res.status(500).json({
+                    error: 'Something went wrong',
+                });
+            },
+            output: `${saveFolderPath}/${originalName}`,
+            input: filePath,
+        });
+    };
+
+    private checkIfFileExists = async (filePath: string): Promise<boolean> => {
+        try {
+            await fs.access(filePath, fs.constants.F_OK);
+            return true;
+        } catch (err: any) {
+            console.log(err);
+            return false;
+        }
     };
 
     private deleteFile = async (filePath: string): Promise<boolean> => {
