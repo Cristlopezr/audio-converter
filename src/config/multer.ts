@@ -1,4 +1,5 @@
 import multer from 'multer';
+import { v4 as uuidv4 } from 'uuid';
 import { audioMimeTypes } from '../domain/constants/audio-mime-types';
 
 export const storage = multer.diskStorage({
@@ -6,7 +7,11 @@ export const storage = multer.diskStorage({
         cb(null, 'uploads/');
     },
     filename: function (req, file, cb) {
-        cb(null, `${Date.now()}-${file.originalname}`);
+        const id = uuidv4();
+
+        (file as any).fileId = id;
+
+        cb(null, `${id}-${file.originalname}`);
     },
 });
 

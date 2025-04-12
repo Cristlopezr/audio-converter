@@ -1,0 +1,18 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("POSTGRES_URL")
+}
+
+
+model Audio {
+  id String @id @db.Uuid
+  originalName String
+  originalNameWithOutExt String
+  ext String
+  mimetype String
+  size Int
+}

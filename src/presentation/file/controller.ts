@@ -6,6 +6,7 @@ import { ConvertAudioUseCase } from '../../domain/use-cases/convert-audio.use-ca
 import { audioMimeTypes } from '../../domain/constants/audio-mime-types';
 import { FfmpegAdapter } from '../../infrastructure/adapters/ffmpeg.adapter';
 import { CutAudioUseCase } from '../../domain/use-cases/cut-audio.use-case';
+import { prisma } from '../../lib/prisma-client';
 
 const audioProcessor = new FfmpegAdapter();
 const convertAudioUseCase = new ConvertAudioUseCase(audioProcessor);
@@ -31,18 +32,35 @@ export class FileController {
             return;
         }
 
-        res.status(200).json({
+        const originalNameWithOutExt = path.basename(req.file.originalname, fileType.ext).replace(/\.$/, '');
+
+        const newAudio = {
             originalName: req.file.originalname,
-            id: req.file.filename.split('-')[0],
+            originalNameWithOutExt: originalNameWithOutExt,
+            id: (req.file as any).fileId,
             size: req.file.size,
             ext: fileType.ext,
-            mime: fileType.mime,
-        });
+            mimetype: fileType.mime,
+        };
+
+        try {
+            await prisma.audio.create({
+                data: newAudio,
+            });
+
+            res.status(200).json(newAudio);
+        } catch (error) {
+            console.log(error);
+            this.deleteFile(req.file.path);
+            res.status(500).json({
+                message: 'Something went wrong.',
+            });
+        }
     };
 
     public convertFileToNewFormat = async (req: Request, res: Response) => {
         const { newFormat, originalName, id, size, ext, mime } = req.body;
-        
+
         const filePath = path.join(__dirname, '..', '..', '..', 'uploads', `${id}-${originalName}`);
 
         const fileExists = await this.checkIfFileExists(filePath);
