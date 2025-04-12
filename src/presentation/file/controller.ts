@@ -63,7 +63,7 @@ export class FileController {
 
         const originalNameWithOutExt = path.basename(originalName, ext);
 
-        const saveFolderPath = path.join(__dirname, '..', '..', '..', 'convertions', id);
+        const saveFolderPath = path.join(__dirname, '..', '..', '..', 'conversions', id);
         await fs.mkdir(saveFolderPath, { recursive: true });
 
         convertAudioUseCase.execute({
@@ -100,7 +100,7 @@ export class FileController {
             return;
         }
 
-        const saveFolderPath = path.join(__dirname, '..', '..', '..', 'convertions', id);
+        const saveFolderPath = path.join(__dirname, '..', '..', '..', 'conversions', id);
         await fs.mkdir(saveFolderPath, { recursive: true });
 
         cutAudioUseCase.execute({
