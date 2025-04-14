@@ -5,13 +5,6 @@ export class CutAudioUseCase {
     constructor(private audioProcessor: AudioProcessor) {}
 
     public execute = async (props: CutAudioProps) => {
-        let duration: string | number = 0;
-        try {
-            duration = props.duration || (await this.audioProcessor.checkAudioDuration(props.input as string));
-        } catch (error) {
-            console.log(error);
-        }
-
-        this.audioProcessor.cutAudio({ ...props, duration: duration });
+        this.audioProcessor.cutAudio({ ...props });
     };
 }

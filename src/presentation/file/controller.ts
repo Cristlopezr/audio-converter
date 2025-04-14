@@ -7,11 +7,23 @@ import { audioMimeTypes } from '../../domain/constants/audio-mime-types';
 import { FfmpegAdapter } from '../../infrastructure/adapters/ffmpeg.adapter';
 import { CutAudioUseCase } from '../../domain/use-cases/cut-audio.use-case';
 import { prisma } from '../../lib/prisma-client';
+import { supportedFormats } from '../../domain/constants/formats';
+import ffmpeg from 'fluent-ffmpeg';
+import { v4 as uuidv4 } from 'uuid';
 
 const audioProcessor = new FfmpegAdapter();
 const convertAudioUseCase = new ConvertAudioUseCase(audioProcessor);
 const cutAudioUseCase = new CutAudioUseCase(audioProcessor);
 
+const audioExtensionToMimeTypeMap: Record<string, string> = {
+    mp3: 'audio/mpeg',
+    wav: 'audio/wav',
+    ogg: 'audio/ogg',
+    m4a: 'audio/mp4',
+    aac: 'audio/x-aac',
+    flac: 'audio/flac',
+    webm: 'audio/webm',
+};
 export class FileController {
     public uploadFile = async (req: Request, res: Response) => {
         if (!req.file) {
@@ -34,18 +46,26 @@ export class FileController {
 
         const originalNameWithOutExt = path.basename(req.file.originalname, fileType.ext).replace(/\.$/, '');
 
-        const newAudio = {
-            originalName: req.file.originalname,
-            originalNameWithOutExt: originalNameWithOutExt,
-            id: (req.file as any).fileId,
-            size: req.file.size,
-            ext: fileType.ext,
-            mimetype: fileType.mime,
-        };
-
         try {
+            const { format, format_long_name, duration, size, bit_rate } = await audioProcessor.checkAudioMetadata(req.file.path);
+
+            const newAudio = {
+                id: (req.file as any).fileId,
+                originalName: req.file.originalname,
+                originalNameWithOutExt: originalNameWithOutExt,
+                ext: format,
+                mimetype: fileType.mime,
+                extLongName: format_long_name,
+                duration,
+                size,
+                bitRate: bit_rate,
+            };
+
             await prisma.audio.create({
-                data: newAudio,
+                data: {
+                    ...newAudio,
+                    type: 'ORIGINAL',
+                },
             });
 
             res.status(200).json(newAudio);
@@ -59,87 +79,178 @@ export class FileController {
     };
 
     public convertFileToNewFormat = async (req: Request, res: Response) => {
-        const { newFormat, originalName, id, size, ext, mime } = req.body;
+        const { format, id } = req.body;
 
-        const filePath = path.join(__dirname, '..', '..', '..', 'uploads', `${id}-${originalName}`);
+        try {
+            const foundAudio = await prisma.audio.findFirst({
+                where: {
+                    id,
+                },
+            });
 
-        const fileExists = await this.checkIfFileExists(filePath);
+            if (!foundAudio) {
+                res.status(400).json({
+                    message: 'Audio not found',
+                });
+                return;
+            }
 
-        if (!fileExists) {
-            res.status(400).json({
-                error: `File doesn't exists`,
+            const filePath = path.join(__dirname, '..', '..', '..', 'uploads', `${id}-${foundAudio.originalName}`);
+
+            const fileExists = await this.checkIfFileExists(filePath);
+
+            if (!fileExists) {
+                res.status(400).json({
+                    error: `File doesn't exists`,
+                });
+            }
+
+            if (!supportedFormats.includes(format)) {
+                await this.deleteFile(filePath);
+                res.status(400).json({
+                    error: 'Format not supported',
+                });
+                return;
+            }
+
+            const newAudioId = uuidv4();
+
+            const saveFolderPath = path.join(__dirname, '..', '..', '..', 'conversions', foundAudio.id, newAudioId);
+            await fs.mkdir(saveFolderPath, { recursive: true });
+
+            const outputPath = `${saveFolderPath}/${foundAudio.originalNameWithOutExt}.${format}`;
+
+            convertAudioUseCase.execute({
+                convertTo: format,
+                onEnd: async () => {
+                    try {
+                        const metadata = await audioProcessor.checkAudioMetadata(outputPath);
+
+                        await prisma.audio.create({
+                            data: {
+                                id: newAudioId,
+                                ext: metadata.format,
+                                mimetype: audioExtensionToMimeTypeMap[metadata.format],
+                                originalName: `${foundAudio.originalNameWithOutExt}.${metadata.format}`,
+                                originalNameWithOutExt: foundAudio.originalNameWithOutExt,
+                                size: metadata.size,
+                                type: 'CONVERTED',
+                                originalId: foundAudio.id,
+                                extLongName: metadata.format_long_name,
+                                duration: metadata.duration,
+                                bitRate: metadata.bit_rate,
+                            },
+                        });
+
+                        res.status(200).json({
+                            message: 'File converted successfully',
+                        });
+                    } catch (error) {
+                        console.log(error);
+                        res.status(200).json({
+                            message: 'File converted successfully',
+                        });
+                    }
+                },
+                onError: async (error: any) => {
+                    console.log({ error });
+                    res.status(500).json({
+                        error: 'Something went wrong converting the audio',
+                    });
+                },
+                output: outputPath,
+                input: filePath,
+            });
+        } catch (error) {
+            console.log(error);
+            res.status(500).json({
+                message: 'Something went wrong',
             });
         }
-
-        if (!newFormat) {
-            await this.deleteFile(filePath);
-            res.status(400).json({
-                error: 'Format to convert is required',
-            });
-            return;
-        }
-
-        const originalNameWithOutExt = path.basename(originalName, ext);
-
-        const saveFolderPath = path.join(__dirname, '..', '..', '..', 'conversions', id);
-        await fs.mkdir(saveFolderPath, { recursive: true });
-
-        convertAudioUseCase.execute({
-            convertTo: newFormat,
-            onEnd: async () => {
-                await this.deleteFile(filePath);
-                res.status(200).json({
-                    message: 'File converted successfully',
-                });
-            },
-            onError: async (error: any) => {
-                console.log({ error });
-                await this.deleteFile(filePath);
-                res.status(500).json({
-                    error: 'Something went wrong',
-                });
-            },
-            output: `${saveFolderPath}/${originalNameWithOutExt}${newFormat}`,
-            input: filePath,
-        });
     };
 
     public cutAudio = async (req: Request, res: Response) => {
-        const { startTime, duration, originalName, id, size, ext } = req.body;
+        const { startTime, duration, id } = req.body;
 
-        const filePath = path.join(__dirname, '..', '..', '..', 'uploads', `${id}-${originalName}`);
-
-        const fileExists = await this.checkIfFileExists(filePath);
-
-        if (!fileExists) {
-            res.status(400).json({
-                error: `File doesn't exists`,
+        try {
+            const foundAudio = await prisma.audio.findFirst({
+                where: {
+                    id,
+                },
             });
-            return;
+
+            if (!foundAudio) {
+                res.status(400).json({
+                    message: 'Audio not found',
+                });
+                return;
+            }
+
+            const filePath = path.join(__dirname, '..', '..', '..', 'uploads', `${id}-${foundAudio.originalName}`);
+
+            const fileExists = await this.checkIfFileExists(filePath);
+
+            if (!fileExists) {
+                res.status(400).json({
+                    error: `File doesn't exists`,
+                });
+                return;
+            }
+
+            const newAudioId = uuidv4();
+            const saveFolderPath = path.join(__dirname, '..', '..', '..', 'conversions', foundAudio.id, newAudioId);
+            await fs.mkdir(saveFolderPath, { recursive: true });
+
+            const outputPath = `${saveFolderPath}/${foundAudio.originalName}`;
+
+            cutAudioUseCase.execute({
+                startTime,
+                duration: duration || foundAudio.duration,
+                onEnd: async () => {
+                    try {
+                        const metadata = await audioProcessor.checkAudioMetadata(outputPath);
+
+                        await prisma.audio.create({
+                            data: {
+                                id: newAudioId,
+                                ext: metadata.format,
+                                mimetype: audioExtensionToMimeTypeMap[metadata.format],
+                                originalName: `${foundAudio.originalName}`,
+                                originalNameWithOutExt: foundAudio.originalNameWithOutExt,
+                                size: metadata.size,
+                                type: 'TRIMMED',
+                                originalId: foundAudio.id,
+                                extLongName: metadata.format_long_name,
+                                duration: metadata.duration,
+                                bitRate: metadata.bit_rate,
+                            },
+                        });
+
+                        res.status(200).json({
+                            message: 'File converted successfully',
+                        });
+                    } catch (error) {
+                        console.log(error);
+                        res.status(200).json({
+                            message: 'File converted successfully',
+                        });
+                    }
+                },
+                onError: async (error: any) => {
+                    console.log({ error });
+                    res.status(500).json({
+                        error: 'Something went wrong',
+                    });
+                },
+                output: outputPath,
+                input: filePath,
+            });
+        } catch (error) {
+            console.log(error);
+            res.status(500).json({
+                message: 'Something went wrong',
+            });
         }
-
-        const saveFolderPath = path.join(__dirname, '..', '..', '..', 'conversions', id);
-        await fs.mkdir(saveFolderPath, { recursive: true });
-
-        cutAudioUseCase.execute({
-            startTime,
-            duration,
-            onEnd: async () => {
-                await this.deleteFile(filePath);
-                res.status(200).json({
-                    message: 'Audio has been successfully cut.',
-                });
-            },
-            onError: async (error: any) => {
-                console.log({ error });
-                await this.deleteFile(filePath);
-                res.status(500).json({
-                    error: 'Something went wrong',
-                });
-            },
-            output: `${saveFolderPath}/${originalName}`,
-            input: filePath,
-        });
     };
 
     private checkIfFileExists = async (filePath: string): Promise<boolean> => {

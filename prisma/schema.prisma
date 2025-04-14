@@ -7,12 +7,25 @@ datasource db {
   url      = env("POSTGRES_URL")
 }
 
+enum Type {
+  ORIGINAL
+  CONVERTED
+  TRIMMED
+}
+
 
 model Audio {
   id String @id @db.Uuid
   originalName String
   originalNameWithOutExt String
+  duration Float
+  extLongName String
+  bitRate Int
   ext String
   mimetype String
   size Int
+  type Type
+  originalId String? @db.Uuid
+  original Audio? @relation("AudioToConversions", fields: [originalId], references: [id])
+  conversions Audio[] @relation("AudioToConversions")
 }
