@@ -28,4 +28,5 @@ model Audio {
   originalId String? @db.Uuid
   original Audio? @relation("AudioToConversions", fields: [originalId], references: [id])
   conversions Audio[] @relation("AudioToConversions")
+  createdAt DateTime @default(now())
 }
