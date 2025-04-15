@@ -8,3 +8,13 @@ export const audioMimeTypes = [
     'audio/flac', // .flac
     'audio/webm', // .webm
 ];
+
+export const audioExtensionToMimeTypeMap: Record<string, string> = {
+    mp3: 'audio/mpeg',
+    wav: 'audio/wav',
+    ogg: 'audio/ogg',
+    m4a: 'audio/mp4',
+    aac: 'audio/x-aac',
+    flac: 'audio/flac',
+    webm: 'audio/webm',
+};
