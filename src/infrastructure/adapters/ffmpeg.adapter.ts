@@ -3,12 +3,12 @@ import { ConverToProps, CutAudioProps } from '../../application/shared/types/con
 import { AudioMetadata, AudioProcessor } from '../../domain/interfaces/audio-processor';
 
 export class FfmpegAdapter implements AudioProcessor {
-    public convertTo = ({ input, convertTo, output, onEnd, onError, options }: ConverToProps) => {
-        ffmpeg(input, options).toFormat(convertTo).on('end', onEnd).on('error', onError).save(output);
+    public convertTo = ({ input, convertTo, output, onEnd, onError }: ConverToProps) => {
+        ffmpeg(input).toFormat(convertTo).on('end', onEnd).on('error', onError).save(output);
     };
 
-    public cutAudio = ({ duration, startTime, onEnd, onError, output, input, options }: CutAudioProps) => {
-        ffmpeg(input, options).setStartTime(startTime).setDuration(duration).on('end', onEnd).on('error', onError).save(output);
+    public cutAudio = ({ duration, startTime, onEnd, onError, output, input }: CutAudioProps) => {
+        ffmpeg(input).setStartTime(startTime).setDuration(duration).on('end', onEnd).on('error', onError).save(output);
     };
 
     public checkAudioMetadata = async (filePath: string): Promise<AudioMetadata> => {

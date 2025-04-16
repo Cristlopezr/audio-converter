@@ -1,10 +1,10 @@
-import { audioExtensionToMimeTypeMap } from '../constants/audio-mime-types';
-import { supportedFormats } from '../constants/formats';
-import { AudioProcessor } from '../interfaces/audio-processor';
-import { FileSystemService } from '../interfaces/file-system.service';
-import { AudioRepository } from '../repositories/audio.repository';
+import { audioExtensionToMimeTypeMap } from '../../domain/constants/audio-mime-types';
+import { supportedFormats } from '../../domain/constants/formats';
+import { AudioProcessor } from '../../domain/interfaces/audio-processor';
+import { FileSystemService } from '../../domain/interfaces/file-system.service';
+import { AudioRepository } from '../../domain/repositories/audio.repository';
 import { v4 as uuidv4 } from 'uuid';
-import { AudioEntity, AudioType } from '../entities/audio.entity';
+import { AudioEntity, AudioType } from '../../domain/entities/audio.entity';
 
 export class ConvertAudioUseCase {
     constructor(private audioProcessor: AudioProcessor, private fileSystemService: FileSystemService, private audioRepository: AudioRepository) {}
@@ -21,7 +21,7 @@ export class ConvertAudioUseCase {
 
             const fileExists = await this.fileSystemService.fileExists(originalFilePath);
 
-            if (!fileExists) throw new Error('File does not exist');
+            if (!fileExists) throw new Error('File does not exists');
 
             const newAudioId = uuidv4();
 

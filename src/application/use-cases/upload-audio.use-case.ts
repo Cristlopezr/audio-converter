@@ -1,6 +1,6 @@
-import { AudioEntity, AudioType } from '../entities/audio.entity';
-import { AudioProcessor } from '../interfaces/audio-processor';
-import { AudioRepository } from '../repositories/audio.repository';
+import { AudioEntity, AudioType } from '../../domain/entities/audio.entity';
+import { AudioProcessor } from '../../domain/interfaces/audio-processor';
+import { AudioRepository } from '../../domain/repositories/audio.repository';
 
 type Props = {
     id: string;

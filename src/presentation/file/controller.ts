@@ -2,12 +2,11 @@ import { Request, Response } from 'express';
 import { fileTypeFromFile } from 'file-type';
 import fs from 'fs/promises';
 import path from 'path';
-import { ConvertAudioUseCase } from '../../domain/use-cases/convert-audio.use-case';
+import { ConvertAudioUseCase } from '../../application/use-cases/convert-audio.use-case';
 import { audioMimeTypes } from '../../domain/constants/audio-mime-types';
-import { CutAudioUseCase } from '../../domain/use-cases/cut-audio.use-case';
-import { prisma } from '../../lib/prisma-client';
-import { v4 as uuidv4 } from 'uuid';
-import { UploadAudioUseCase } from '../../domain/use-cases/upload-audio.use-case';
+import { CutAudioUseCase } from '../../application/use-cases/cut-audio.use-case';
+import { UploadAudioUseCase } from '../../application/use-cases/upload-audio.use-case';
+import { AudioDto } from '../dtos/audio.dto';
 
 export class FileController {
     constructor(private convertAudioUseCase: ConvertAudioUseCase, private uploadAudioUseCase: UploadAudioUseCase, private cutAudioUseCase: CutAudioUseCase) {}
@@ -44,7 +43,9 @@ export class FileController {
 
             const savedAudio = await this.uploadAudioUseCase.execute({ ...newAudio, filePath: req.file.path });
 
-            res.status(200).json(savedAudio);
+            const audio = AudioDto.fromEntity(savedAudio);
+
+            res.status(200).json(audio);
         } catch (error) {
             console.log(error);
             this.deleteFile(req.file.path);
@@ -58,7 +59,9 @@ export class FileController {
         const { format, id } = req.body;
 
         try {
-            const audio = await this.convertAudioUseCase.execute(id, format);
+            const convertedAudio = await this.convertAudioUseCase.execute(id, format);
+
+            const audio = AudioDto.fromEntity(convertedAudio);
             res.status(200).json({
                 audio,
                 message: 'File converted successfully',
@@ -75,7 +78,8 @@ export class FileController {
         const { startTime, duration, id } = req.body;
 
         try {
-            const audio = await this.cutAudioUseCase.execute(id, startTime, duration);
+            const trimmedAudio = await this.cutAudioUseCase.execute(id, startTime, duration);
+            const audio = AudioDto.fromEntity(trimmedAudio);
             res.status(200).json({
                 audio,
                 message: 'File trimmed successfully',

@@ -2,12 +2,12 @@ import { Router } from 'express';
 import { FileController } from './controller';
 import { handleMiddlewareError } from '../../infrastructure/middlewares/handle-error.middleware';
 import { FfmpegAdapter } from '../../infrastructure/adapters/ffmpeg.adapter';
-import { ConvertAudioUseCase } from '../../domain/use-cases/convert-audio.use-case';
-import { CutAudioUseCase } from '../../domain/use-cases/cut-audio.use-case';
+import { ConvertAudioUseCase } from '../../application/use-cases/convert-audio.use-case';
+import { CutAudioUseCase } from '../../application/use-cases/cut-audio.use-case';
 import { AudioRepositoryImpl } from '../../infrastructure/repositories/audio.repository.impl';
 import { AudioDatasourceImpl } from '../../infrastructure/datasources/audio.datasource.impl';
 import { upload } from '../../config/multer';
-import { UploadAudioUseCase } from '../../domain/use-cases/upload-audio.use-case';
+import { UploadAudioUseCase } from '../../application/use-cases/upload-audio.use-case';
 import { FileSystemService } from '../../infrastructure/services/file-system.service.impl';
 
 const audioProcessor = new FfmpegAdapter();
