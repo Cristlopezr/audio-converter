@@ -1,6 +1,6 @@
 import { AudioDatasource } from '../../domain/datasources/audio.datasource';
 import { AudioEntity } from '../../domain/entities/audio.entity';
-import { prisma } from '../../lib/prisma-client';
+import { prisma } from '../../data/postgres/prisma-client';
 
 export class AudioDatasourceImpl implements AudioDatasource {
     async saveAudio(newAudio: AudioEntity): Promise<AudioEntity> {
