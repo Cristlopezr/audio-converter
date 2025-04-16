@@ -1,18 +1,22 @@
 import { audioExtensionToMimeTypeMap } from '../../domain/constants/audio-mime-types';
-import { supportedFormats } from '../../domain/constants/formats';
 import { AudioProcessor } from '../../domain/services/audio-processor';
 import { FileSystemService } from '../../domain/services/file-system.service';
 import { AudioRepository } from '../../domain/repositories/audio.repository';
 import { v4 as uuidv4 } from 'uuid';
 import { AudioEntity, AudioType } from '../../domain/entities/audio.entity';
+import { FileChecker } from '../../domain/services/file-checker';
 
-export class ConvertAudioUseCase {
-    constructor(private audioProcessor: AudioProcessor, private fileSystemService: FileSystemService, private audioRepository: AudioRepository) {}
+export interface ConvertAudioUseCase {
+    execute(id: string, format: string): Promise<AudioEntity>;
+}
+
+export class ConvertAudio implements ConvertAudioUseCase {
+    constructor(private audioProcessor: AudioProcessor, private fileCheckerService: FileChecker, private fileSystemService: FileSystemService, private audioRepository: AudioRepository) {}
 
     public execute = async (id: string, format: string) => {
         const foundAudio = await this.audioRepository.getAudioById(id);
 
-        if (!supportedFormats.includes(format)) throw new Error('Format not supported');
+        this.fileCheckerService.checkSupportedFormat(format);
 
         const originalFilePath = this.fileSystemService.getUploadPath(foundAudio.id, foundAudio.originalName);
 

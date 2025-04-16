@@ -5,7 +5,11 @@ import { FileSystemService } from '../../domain/services/file-system.service';
 import { AudioRepository } from '../../domain/repositories/audio.repository';
 import { v4 as uuidv4 } from 'uuid';
 
-export class CutAudioUseCase {
+export interface TrimAudioUseCase {
+    execute(id: string, startTime: string, duration: number): Promise<AudioEntity>;
+}
+
+export class TrimAudio implements TrimAudioUseCase {
     constructor(private audioProcessor: AudioProcessor, private fileSystemService: FileSystemService, private audioRepository: AudioRepository) {}
 
     public execute = async (id: string, startTime: string, duration: number) => {
@@ -15,7 +19,7 @@ export class CutAudioUseCase {
         await this.fileSystemService.fileExists(originalFilePath);
 
         const newAudioId = uuidv4();
-        
+
         const outputDir = this.fileSystemService.getConversionPath(foundAudio.id, newAudioId);
         await this.fileSystemService.createDirectory(outputDir);
 

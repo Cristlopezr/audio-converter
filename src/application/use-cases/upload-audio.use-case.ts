@@ -1,27 +1,20 @@
 import { AudioEntity, AudioType } from '../../domain/entities/audio.entity';
 import { AudioProcessor } from '../../domain/services/audio-processor';
 import { AudioRepository } from '../../domain/repositories/audio.repository';
-import { FileType } from '../../domain/services/file-type';
+import { FileChecker } from '../../domain/services/file-checker';
 import { FileSystemService } from '../../domain/services/file-system.service';
-import { audioMimeTypes } from '../../domain/constants/audio-mime-types';
 
-type Props = {
-    id: string;
-    originalName: string;
-    filePath: string;
-    type: string;
-};
+export interface UploadAudioUseCase {
+    execute(id: string, originalName: string, filePath: string, type: string): Promise<AudioEntity>;
+}
 
-export class UploadAudioUseCase {
-    constructor(private audioProcessor: AudioProcessor, private fileSystemService: FileSystemService, private fileTypeService: FileType, private audioRepository: AudioRepository) {}
+export class UploadAudio implements UploadAudioUseCase {
+    constructor(private audioProcessor: AudioProcessor, private fileSystemService: FileSystemService, private fileCheckerService: FileChecker, private audioRepository: AudioRepository) {}
 
-    public execute = async ({ filePath, id, originalName, type }: Props) => {
-        const fileType = await this.fileTypeService.getFileType(filePath);
+    public execute = async (id: string, originalName: string, filePath: string, type: string) => {
+        const fileType = await this.fileCheckerService.getFileType(filePath);
 
-        if (!audioMimeTypes.includes(fileType.mime.split(';')[0])) {
-            await this.fileSystemService.deleteFile(filePath);
-            throw new Error('File type not supported.');
-        }
+        this.fileCheckerService.checkMimetype(fileType.mime);
 
         const originalNameWithOutExt = this.fileSystemService.getOriginalNameWithOutExt(originalName, fileType.ext);
 

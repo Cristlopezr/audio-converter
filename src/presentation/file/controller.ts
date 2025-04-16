@@ -1,11 +1,17 @@
 import { Request, Response } from 'express';
 import { ConvertAudioUseCase } from '../../application/use-cases/convert-audio.use-case';
-import { CutAudioUseCase } from '../../application/use-cases/cut-audio.use-case';
+import { TrimAudioUseCase } from '../../application/use-cases/trim-audio.use-case';
 import { UploadAudioUseCase } from '../../application/use-cases/upload-audio.use-case';
 import { AudioDto } from '../dtos/audio.dto';
+import { DeleteFileUseCase } from '../../application/use-cases/delete-file.use-case';
 
 export class FileController {
-    constructor(private convertAudioUseCase: ConvertAudioUseCase, private uploadAudioUseCase: UploadAudioUseCase, private cutAudioUseCase: CutAudioUseCase) {}
+    constructor(
+        private convertAudioUseCase: ConvertAudioUseCase,
+        private uploadAudioUseCase: UploadAudioUseCase,
+        private trimAudioUseCase: TrimAudioUseCase,
+        private deleteFileUseCase: DeleteFileUseCase
+    ) {}
 
     public uploadFile = async (req: Request, res: Response) => {
         try {
@@ -14,16 +20,21 @@ export class FileController {
                 originalName: req.file!.originalname,
                 type: 'ORIGINAL',
             };
-
-            const savedAudio = await this.uploadAudioUseCase.execute({ ...newAudio, filePath: req.file!.path });
-
+            const savedAudio = await this.uploadAudioUseCase.execute(newAudio.id, newAudio.originalName, req.file!.path, 'ORIGINAL');
             const audio = AudioDto.fromEntity(savedAudio);
 
             res.status(200).json(audio);
         } catch (error) {
+            if (error instanceof Error && error.message === 'File type not supported.') {
+                await this.deleteFileUseCase.execute(req.file!.path);
+                console.log(error.message);
+                return res.status(400).json({
+                    error: error.message,
+                });
+            }
             console.log(error);
             res.status(500).json({
-                message: 'Something went wrong.',
+                error: 'Something went wrong.',
             });
         }
     };
@@ -42,16 +53,16 @@ export class FileController {
         } catch (error) {
             console.log(error);
             res.status(500).json({
-                message: 'Something went wrong',
+                error: 'Something went wrong',
             });
         }
     };
 
-    public cutAudio = async (req: Request, res: Response) => {
+    public trimAudio = async (req: Request, res: Response) => {
         const { startTime, duration, id } = req.body;
 
         try {
-            const trimmedAudio = await this.cutAudioUseCase.execute(id, startTime, duration);
+            const trimmedAudio = await this.trimAudioUseCase.execute(id, startTime, duration);
             const audio = AudioDto.fromEntity(trimmedAudio);
             res.status(200).json({
                 audio,
@@ -60,7 +71,7 @@ export class FileController {
         } catch (error) {
             console.log(error);
             res.status(500).json({
-                message: 'Something went wrong',
+                error: 'Something went wrong',
             });
         }
     };
