@@ -1,15 +1,14 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { FileSystemService } from '../../domain/interfaces/file-system.service';
+import { FileSystemService } from '../../domain/services/file-system.service';
 
 export class FileSystemServiceImpl implements FileSystemService {
     async fileExists(filePath: string) {
         try {
             await fs.access(filePath, fs.constants.F_OK);
-            return true;
         } catch (err: any) {
             console.log(err);
-            return false;
+            throw new Error('File does not exists');
         }
     }
 

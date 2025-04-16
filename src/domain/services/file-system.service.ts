@@ -1,5 +1,5 @@
 export interface FileSystemService {
-    fileExists(filePath: string): Promise<Boolean>;
+    fileExists(filePath: string): Promise<void>;
     createDirectory(path: string): Promise<void>;
     getUploadPath(audioId: string, audioOriginalName: string): string;
     createOutputPath(outputDir: string, originalNameWithoutExt: string, ext: string): string;

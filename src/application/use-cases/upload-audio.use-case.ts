@@ -1,8 +1,8 @@
 import { AudioEntity, AudioType } from '../../domain/entities/audio.entity';
-import { AudioProcessor } from '../../domain/interfaces/audio-processor';
+import { AudioProcessor } from '../../domain/services/audio-processor';
 import { AudioRepository } from '../../domain/repositories/audio.repository';
-import { FileType } from '../../domain/interfaces/file-type';
-import { FileSystemService } from '../../domain/interfaces/file-system.service';
+import { FileType } from '../../domain/services/file-type';
+import { FileSystemService } from '../../domain/services/file-system.service';
 import { audioMimeTypes } from '../../domain/constants/audio-mime-types';
 
 type Props = {
@@ -17,11 +17,6 @@ export class UploadAudioUseCase {
 
     public execute = async ({ filePath, id, originalName, type }: Props) => {
         const fileType = await this.fileTypeService.getFileType(filePath);
-
-        if (!fileType) {
-            await this.fileSystemService.deleteFile(filePath);
-            throw new Error('No match for file type.');
-        }
 
         if (!audioMimeTypes.includes(fileType.mime.split(';')[0])) {
             await this.fileSystemService.deleteFile(filePath);

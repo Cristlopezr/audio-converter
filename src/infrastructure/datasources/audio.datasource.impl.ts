@@ -4,34 +4,24 @@ import { prisma } from '../../data/postgres/prisma-client';
 
 export class AudioDatasourceImpl implements AudioDatasource {
     async saveAudio(newAudio: AudioEntity): Promise<AudioEntity> {
-        try {
-            const audio = await prisma.audio.create({
-                data: newAudio,
-            });
+        const audio = await prisma.audio.create({
+            data: newAudio,
+        });
 
-            return AudioEntity.fromJson(audio);
-        } catch (error) {
-            console.log(error);
-            throw new Error('An error has ocurred saving audio info');
-        }
+        return AudioEntity.fromJson(audio);
     }
     async getAudioById(id: string): Promise<AudioEntity> {
-        try {
-            const foundAudio = await prisma.audio.findFirst({
-                where: {
-                    id,
-                },
-            });
+        const foundAudio = await prisma.audio.findFirst({
+            where: {
+                id,
+            },
+        });
 
-            if (!foundAudio) {
-                throw new Error('Audio not found');
-            }
-
-            return AudioEntity.fromJson(foundAudio);
-        } catch (error) {
-            console.log(error);
-            throw new Error('An error has ocurred getting audio info');
+        if (!foundAudio) {
+            throw new Error('Audio not found');
         }
+
+        return AudioEntity.fromJson(foundAudio);
     }
     getAllAudios(): Promise<AudioEntity[]> {
         throw new Error('Method not implemented.');

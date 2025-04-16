@@ -1,7 +1,7 @@
 import { audioExtensionToMimeTypeMap } from '../../domain/constants/audio-mime-types';
 import { AudioEntity, AudioType } from '../../domain/entities/audio.entity';
-import { AudioProcessor } from '../../domain/interfaces/audio-processor';
-import { FileSystemService } from '../../domain/interfaces/file-system.service';
+import { AudioProcessor } from '../../domain/services/audio-processor';
+import { FileSystemService } from '../../domain/services/file-system.service';
 import { AudioRepository } from '../../domain/repositories/audio.repository';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -11,14 +11,11 @@ export class CutAudioUseCase {
     public execute = async (id: string, startTime: string, duration: number) => {
         const foundAudio = await this.audioRepository.getAudioById(id);
 
-        if (!foundAudio) throw new Error('Audio not found');
-
         const originalFilePath = this.fileSystemService.getUploadPath(foundAudio.id, foundAudio.originalName);
-        const fileExists = await this.fileSystemService.fileExists(originalFilePath);
-        if (!fileExists) throw new Error('File does not exists');
+        await this.fileSystemService.fileExists(originalFilePath);
 
         const newAudioId = uuidv4();
-
+        
         const outputDir = this.fileSystemService.getConversionPath(foundAudio.id, newAudioId);
         await this.fileSystemService.createDirectory(outputDir);
 

@@ -1,6 +1,6 @@
 import { AudioEntity } from '../../domain/entities/audio.entity';
 
-type Props = {
+type Options = {
     id: string;
     name: string;
     nameWithOutExt: string;
@@ -19,7 +19,7 @@ export class AudioDto {
     public mimetype: string;
     public size: number;
 
-    constructor(props: Props) {
+    constructor(props: Options) {
         this.duration = props.duration;
         this.ext = props.ext;
         this.id = props.id;

@@ -4,7 +4,7 @@ export enum AudioType {
     trimmed = 'TRIMMED',
 }
 
-type Props = {
+type Options = {
     id: string;
     originalName: string;
     originalNameWithOutExt: string;
@@ -33,7 +33,7 @@ export class AudioEntity {
     public originalId?: string;
     public createdAt?: Date;
 
-    constructor(props: Props) {
+    constructor(props: Options) {
         this.bitRate = props.bitRate;
         this.createdAt = props.createdAt;
         this.duration = props.duration;

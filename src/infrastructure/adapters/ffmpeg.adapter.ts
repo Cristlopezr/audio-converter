@@ -1,6 +1,6 @@
 import ffmpeg from 'fluent-ffmpeg';
 import { ConverToProps, CutAudioProps } from '../../application/shared/types/convert-to';
-import { AudioMetadata, AudioProcessor } from '../../domain/interfaces/audio-processor';
+import { AudioMetadata, AudioProcessor } from '../../domain/services/audio-processor';
 
 export class FfmpegAdapter implements AudioProcessor {
     public convertTo = ({ input, convertTo, output, onEnd, onError }: ConverToProps) => {
