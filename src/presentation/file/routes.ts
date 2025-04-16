@@ -8,15 +8,18 @@ import { AudioRepositoryImpl } from '../../infrastructure/repositories/audio.rep
 import { AudioDatasourceImpl } from '../../infrastructure/datasources/audio.datasource.impl';
 import { upload } from '../../config/multer';
 import { UploadAudioUseCase } from '../../application/use-cases/upload-audio.use-case';
-import { FileSystemService } from '../../infrastructure/services/file-system.service.impl';
+import { FileSystemServiceImpl } from '../../infrastructure/services/file-system.service.impl';
+import { FileTypeServiceImpl } from '../../infrastructure/adapters/file-type.adapter';
+import { validateFile } from '../../infrastructure/middlewares/validate-file.middleware';
 
 const audioProcessor = new FfmpegAdapter();
 const audioDatasource = new AudioDatasourceImpl();
-const fileSystemService = new FileSystemService();
+const fileSystemService = new FileSystemServiceImpl();
+const fileTypeService = new FileTypeServiceImpl();
 const audioRepository = new AudioRepositoryImpl(audioDatasource);
 const convertAudioUseCase = new ConvertAudioUseCase(audioProcessor, fileSystemService, audioRepository);
 const cutAudioUseCase = new CutAudioUseCase(audioProcessor, fileSystemService, audioRepository);
-const uploadAudioUseCase = new UploadAudioUseCase(audioProcessor, audioRepository);
+const uploadAudioUseCase = new UploadAudioUseCase(audioProcessor, fileSystemService, fileTypeService, audioRepository);
 
 export class FileRoutes {
     static get routes(): Router {
@@ -24,7 +27,7 @@ export class FileRoutes {
 
         const fileController = new FileController(convertAudioUseCase, uploadAudioUseCase, cutAudioUseCase);
 
-        router.post('/upload', upload.single('file'), handleMiddlewareError, fileController.uploadFile);
+        router.post('/upload', upload.single('file'), handleMiddlewareError, validateFile, fileController.uploadFile);
         router.post('/convert', fileController.convertFileToNewFormat);
         router.post('/cutAudio', fileController.cutAudio);
 

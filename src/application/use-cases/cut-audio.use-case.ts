@@ -38,7 +38,7 @@ export class CutAudioUseCase {
                                 id: newAudioId,
                                 ext: metadata.format,
                                 mimetype: audioExtensionToMimeTypeMap[metadata.format],
-                                originalName: `${foundAudio.originalNameWithOutExt}`,
+                                originalName: `${foundAudio.originalName}`,
                                 originalNameWithOutExt: foundAudio.originalNameWithOutExt,
                                 size: metadata.size,
                                 type: 'TRIMMED' as AudioType,
