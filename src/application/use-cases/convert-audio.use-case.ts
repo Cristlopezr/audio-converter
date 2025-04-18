@@ -11,12 +11,14 @@ export interface ConvertAudioUseCase {
 }
 
 export class ConvertAudio implements ConvertAudioUseCase {
-    constructor(private audioProcessor: AudioProcessor, private fileCheckerService: FileChecker, private fileSystemService: FileSystemService, private audioRepository: AudioRepository) {}
+    constructor(
+        private audioProcessor: AudioProcessor,
+        private fileSystemService: FileSystemService,
+        private audioRepository: AudioRepository
+    ) {}
 
     public execute = async (id: string, format: string) => {
         const foundAudio = await this.audioRepository.getAudioById(id);
-
-        this.fileCheckerService.checkSupportedFormat(format);
 
         const originalFilePath = this.fileSystemService.getUploadPath(foundAudio.id, foundAudio.originalName);
 
@@ -27,7 +29,11 @@ export class ConvertAudio implements ConvertAudioUseCase {
         const outputDir = this.fileSystemService.getConversionPath(foundAudio.id, newAudioId);
         await this.fileSystemService.createDirectory(outputDir);
 
-        const outputPath = this.fileSystemService.createOutputPath(outputDir, foundAudio.originalNameWithOutExt, format);
+        const outputPath = this.fileSystemService.createOutputPath(
+            outputDir,
+            foundAudio.originalNameWithOutExt,
+            format
+        );
 
         return new Promise<AudioEntity>(async (resolve, reject) => {
             this.audioProcessor.convertTo({

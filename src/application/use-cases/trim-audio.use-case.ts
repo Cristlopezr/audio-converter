@@ -4,16 +4,28 @@ import { AudioProcessor } from '../../domain/services/audio-processor';
 import { FileSystemService } from '../../domain/services/file-system.service';
 import { AudioRepository } from '../../domain/repositories/audio.repository';
 import { v4 as uuidv4 } from 'uuid';
+import { CustomError } from '../../domain/errors/custom-error';
 
 export interface TrimAudioUseCase {
-    execute(id: string, startTime: string, duration: number): Promise<AudioEntity>;
+    execute(id: string, startTime: number, duration: number): Promise<AudioEntity>;
 }
 
 export class TrimAudio implements TrimAudioUseCase {
-    constructor(private audioProcessor: AudioProcessor, private fileSystemService: FileSystemService, private audioRepository: AudioRepository) {}
+    private epsilon: number = 0.05;
 
-    public execute = async (id: string, startTime: string, duration: number) => {
+    constructor(
+        private audioProcessor: AudioProcessor,
+        private fileSystemService: FileSystemService,
+        private audioRepository: AudioRepository
+    ) {}
+
+    public execute = async (id: string, startTime: number, duration: number) => {
         const foundAudio = await this.audioRepository.getAudioById(id);
+
+        if (startTime + this.epsilon > foundAudio.duration)
+            throw CustomError.badRequest('Invalid startTime it must be at least 50ms before the end of the audio');
+
+        //TODO:validate that duration does not exceeds audio length
 
         const originalFilePath = this.fileSystemService.getUploadPath(foundAudio.id, foundAudio.originalName);
         await this.fileSystemService.fileExists(originalFilePath);
@@ -23,11 +35,15 @@ export class TrimAudio implements TrimAudioUseCase {
         const outputDir = this.fileSystemService.getConversionPath(foundAudio.id, newAudioId);
         await this.fileSystemService.createDirectory(outputDir);
 
-        const outputPath = this.fileSystemService.createOutputPath(outputDir, foundAudio.originalNameWithOutExt, foundAudio.ext);
+        const outputPath = this.fileSystemService.createOutputPath(
+            outputDir,
+            foundAudio.originalNameWithOutExt,
+            foundAudio.ext
+        );
 
         return new Promise<AudioEntity>(async (resolve, reject) => {
             this.audioProcessor.cutAudio({
-                duration: duration || foundAudio.duration,
+                duration,
                 startTime,
                 input: originalFilePath,
                 output: outputPath,
@@ -55,8 +71,8 @@ export class TrimAudio implements TrimAudioUseCase {
                         reject(error);
                     }
                 },
-                onError: error => {
-                    console.log({ error });
+                onError: (error, stdout, stderr) => {
+                    /*  console.log({ error: error.message }); */
                     reject(error);
                 },
             });

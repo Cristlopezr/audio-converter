@@ -1,6 +1,5 @@
 import { fileTypeFromFile } from 'file-type';
 import { FileChecker } from '../../domain/services/file-checker';
-import { supportedFormats } from '../../domain/constants/formats';
 import { audioMimeTypes } from '../../domain/constants/audio-mime-types';
 import { CustomError } from '../../domain/errors/custom-error';
 
@@ -14,9 +13,7 @@ export class FileCheckerServiceImpl implements FileChecker {
             ext: fileType.ext,
         };
     }
-    checkSupportedFormat(format: string): void {
-        if (!supportedFormats.includes(format)) throw CustomError.badRequest('Format not supported');
-    }
+
     checkMimetype(mimetype: string): void {
         if (!audioMimeTypes.includes(mimetype.split(';')[0])) throw CustomError.badRequest('File type not supported.');
     }

@@ -19,7 +19,7 @@ const fileSystemService = new FileSystemServiceImpl();
 const fileCheckerService = new FileCheckerServiceImpl();
 const audioRepository = new AudioRepositoryImpl(audioDatasource);
 const deleteFileUseCase = new DeleteFile(fileSystemService);
-const convertAudioUseCase = new ConvertAudio(audioProcessor, fileCheckerService, fileSystemService, audioRepository);
+const convertAudioUseCase = new ConvertAudio(audioProcessor, fileSystemService, audioRepository);
 const trimAudioUseCase = new TrimAudio(audioProcessor, fileSystemService, audioRepository);
 const uploadAudioUseCase = new UploadAudio(audioProcessor, fileSystemService, fileCheckerService, audioRepository);
 
@@ -27,7 +27,12 @@ export class FileRoutes {
     static get routes(): Router {
         const router = Router();
 
-        const fileController = new FileController(convertAudioUseCase, uploadAudioUseCase, trimAudioUseCase, deleteFileUseCase);
+        const fileController = new FileController(
+            convertAudioUseCase,
+            uploadAudioUseCase,
+            trimAudioUseCase,
+            deleteFileUseCase
+        );
 
         router.post('/upload', upload.single('file'), handleMiddlewareError, validateFile, fileController.uploadFile);
         router.post('/convert', fileController.convertFileToNewFormat);

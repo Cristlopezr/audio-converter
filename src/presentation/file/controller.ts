@@ -5,6 +5,8 @@ import { UploadAudioUseCase } from '../../application/use-cases/upload-audio.use
 import { AudioDto } from '../dtos/audio.dto';
 import { DeleteFileUseCase } from '../../application/use-cases/delete-file.use-case';
 import { CustomError } from '../../domain/errors/custom-error';
+import { ConvertAudioDto } from '../dtos/convert-audio.dto';
+import { TrimAudioDto } from '../dtos/trim-audio.dto';
 
 export class FileController {
     constructor(
@@ -52,8 +54,15 @@ export class FileController {
     public convertFileToNewFormat = async (req: Request, res: Response) => {
         const { format, id } = req.body;
 
+        const [error, convertAudioDto] = ConvertAudioDto.create({ id, format });
+
+        if (error) {
+            res.status(400).json({ error });
+            return;
+        }
+
         try {
-            const convertedAudio = await this.convertAudioUseCase.execute(id, format);
+            const convertedAudio = await this.convertAudioUseCase.execute(convertAudioDto!.id, convertAudioDto!.format);
 
             const audio = AudioDto.fromEntity(convertedAudio);
             res.status(200).json({
@@ -68,8 +77,19 @@ export class FileController {
     public trimAudio = async (req: Request, res: Response) => {
         const { startTime, duration, id } = req.body;
 
+        const [error, trimAudioDto] = TrimAudioDto.create({ startTime, duration, id });
+
+        if (error) {
+            res.status(400).json({ error });
+            return;
+        }
+
         try {
-            const trimmedAudio = await this.trimAudioUseCase.execute(id, startTime, duration);
+            const trimmedAudio = await this.trimAudioUseCase.execute(
+                trimAudioDto!.id,
+                trimAudioDto!.startTime,
+                trimAudioDto!.duration
+            );
             const audio = AudioDto.fromEntity(trimmedAudio);
             res.status(200).json({
                 audio,
