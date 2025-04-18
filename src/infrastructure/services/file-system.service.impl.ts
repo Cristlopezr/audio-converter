@@ -1,6 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { FileSystemService } from '../../domain/services/file-system.service';
+import { CustomError } from '../../domain/errors/custom-error';
 
 export class FileSystemServiceImpl implements FileSystemService {
     async fileExists(filePath: string) {
@@ -8,7 +9,7 @@ export class FileSystemServiceImpl implements FileSystemService {
             await fs.access(filePath, fs.constants.F_OK);
         } catch (err: any) {
             console.log(err);
-            throw new Error('File does not exists');
+            throw CustomError.notFound('File does not exists');
         }
     }
 
@@ -17,7 +18,7 @@ export class FileSystemServiceImpl implements FileSystemService {
             await fs.mkdir(path, { recursive: true });
         } catch (error) {
             console.log(error);
-            throw new Error('Error creating directory');
+            throw CustomError.internalServer('Error creating directory');
         }
     }
 

@@ -4,6 +4,7 @@ import { TrimAudioUseCase } from '../../application/use-cases/trim-audio.use-cas
 import { UploadAudioUseCase } from '../../application/use-cases/upload-audio.use-case';
 import { AudioDto } from '../dtos/audio.dto';
 import { DeleteFileUseCase } from '../../application/use-cases/delete-file.use-case';
+import { CustomError } from '../../domain/errors/custom-error';
 
 export class FileController {
     constructor(
@@ -13,6 +14,20 @@ export class FileController {
         private deleteFileUseCase: DeleteFileUseCase
     ) {}
 
+    private handleError = async (error: unknown, res: Response, filePath?: string) => {
+        if (error instanceof CustomError) {
+            if (error.message === 'File type not supported.') {
+                await this.deleteFileUseCase.execute(filePath!);
+            }
+            return res.status(error.statusCode).json({
+                error: error.message,
+            });
+        }
+        return res.status(500).json({
+            error: 'Something went wrong.',
+        });
+    };
+
     public uploadFile = async (req: Request, res: Response) => {
         try {
             const newAudio = {
@@ -20,22 +35,17 @@ export class FileController {
                 originalName: req.file!.originalname,
                 type: 'ORIGINAL',
             };
-            const savedAudio = await this.uploadAudioUseCase.execute(newAudio.id, newAudio.originalName, req.file!.path, 'ORIGINAL');
+            const savedAudio = await this.uploadAudioUseCase.execute(
+                newAudio.id,
+                newAudio.originalName,
+                req.file!.path,
+                'ORIGINAL'
+            );
             const audio = AudioDto.fromEntity(savedAudio);
 
             res.status(200).json(audio);
         } catch (error) {
-            if (error instanceof Error && error.message === 'File type not supported.') {
-                await this.deleteFileUseCase.execute(req.file!.path);
-                console.log(error.message);
-                return res.status(400).json({
-                    error: error.message,
-                });
-            }
-            console.log(error);
-            res.status(500).json({
-                error: 'Something went wrong.',
-            });
+            this.handleError(error, res, req.file!.path);
         }
     };
 
@@ -51,10 +61,7 @@ export class FileController {
                 message: 'File converted successfully',
             });
         } catch (error) {
-            console.log(error);
-            res.status(500).json({
-                error: 'Something went wrong',
-            });
+            this.handleError(error, res);
         }
     };
 
@@ -69,10 +76,7 @@ export class FileController {
                 message: 'File trimmed successfully',
             });
         } catch (error) {
-            console.log(error);
-            res.status(500).json({
-                error: 'Something went wrong',
-            });
+            this.handleError(error, res);
         }
     };
 }

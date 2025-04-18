@@ -2,11 +2,12 @@ import { fileTypeFromFile } from 'file-type';
 import { FileChecker } from '../../domain/services/file-checker';
 import { supportedFormats } from '../../domain/constants/formats';
 import { audioMimeTypes } from '../../domain/constants/audio-mime-types';
+import { CustomError } from '../../domain/errors/custom-error';
 
 export class FileCheckerServiceImpl implements FileChecker {
     async getFileType(filePath: string): Promise<{ mime: string; ext: string }> {
         const fileType = await fileTypeFromFile(filePath);
-        if (!fileType) throw new Error('No match for file type.');
+        if (!fileType) throw CustomError.badRequest('No match for file type.');
 
         return {
             mime: fileType.mime,
@@ -14,9 +15,9 @@ export class FileCheckerServiceImpl implements FileChecker {
         };
     }
     checkSupportedFormat(format: string): void {
-        if (!supportedFormats.includes(format)) throw new Error('Format not supported');
+        if (!supportedFormats.includes(format)) throw CustomError.badRequest('Format not supported');
     }
     checkMimetype(mimetype: string): void {
-        if (!audioMimeTypes.includes(mimetype.split(';')[0])) throw new Error('File type not supported.');
+        if (!audioMimeTypes.includes(mimetype.split(';')[0])) throw CustomError.badRequest('File type not supported.');
     }
 }

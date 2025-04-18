@@ -1,6 +1,7 @@
 import { AudioDatasource } from '../../domain/datasources/audio.datasource';
 import { AudioEntity } from '../../domain/entities/audio.entity';
 import { prisma } from '../../data/postgres/prisma-client';
+import { CustomError } from '../../domain/errors/custom-error';
 
 export class AudioDatasourceImpl implements AudioDatasource {
     async saveAudio(newAudio: AudioEntity): Promise<AudioEntity> {
@@ -18,7 +19,7 @@ export class AudioDatasourceImpl implements AudioDatasource {
         });
 
         if (!foundAudio) {
-            throw new Error('Audio not found');
+            throw CustomError.notFound('Audio not found');
         }
 
         return AudioEntity.fromJson(foundAudio);
