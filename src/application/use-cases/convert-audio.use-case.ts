@@ -4,7 +4,6 @@ import { FileSystemService } from '../../domain/services/file-system.service';
 import { AudioRepository } from '../../domain/repositories/audio.repository';
 import { v4 as uuidv4 } from 'uuid';
 import { AudioEntity, AudioType } from '../../domain/entities/audio.entity';
-import { FileChecker } from '../../domain/services/file-checker';
 
 export interface ConvertAudioUseCase {
     execute(id: string, format: string): Promise<AudioEntity>;

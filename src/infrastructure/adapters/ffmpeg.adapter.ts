@@ -14,7 +14,7 @@ export class FfmpegAdapter implements AudioProcessor {
     public checkAudioMetadata = async (filePath: string): Promise<AudioMetadata> => {
         return new Promise((resolve, reject) => {
             ffmpeg.ffprobe(filePath, (err, metadata) => {
-                if (err) return reject(`Error al obtener metadata:, ${err}`);
+                if (err) return reject('Something went wrong');
 
                 const { format } = metadata;
                 resolve({

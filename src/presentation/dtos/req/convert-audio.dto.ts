@@ -1,4 +1,4 @@
-import { supportedFormats } from '../../domain/constants/formats';
+import { supportedFormats } from '../../../domain/constants/formats';
 
 export class ConvertAudioDto {
     constructor(public readonly id: string, public readonly format: string) {}

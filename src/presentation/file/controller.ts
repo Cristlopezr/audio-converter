@@ -2,11 +2,11 @@ import { Request, Response } from 'express';
 import { ConvertAudioUseCase } from '../../application/use-cases/convert-audio.use-case';
 import { TrimAudioUseCase } from '../../application/use-cases/trim-audio.use-case';
 import { UploadAudioUseCase } from '../../application/use-cases/upload-audio.use-case';
-import { AudioDto } from '../dtos/audio.dto';
+import { AudioDto } from '../dtos/res/audio.dto';
 import { DeleteFileUseCase } from '../../application/use-cases/delete-file.use-case';
 import { CustomError } from '../../domain/errors/custom-error';
-import { ConvertAudioDto } from '../dtos/convert-audio.dto';
-import { TrimAudioDto } from '../dtos/trim-audio.dto';
+import { ConvertAudioDto } from '../dtos/req/convert-audio.dto';
+import { TrimAudioDto } from '../dtos/req/trim-audio.dto';
 
 export class FileController {
     constructor(
